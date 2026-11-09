@@ -1,0 +1,18 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+jwt:
+  # Secret key (Base64 or 256+ bit text)
+  secret: c2VjdXJlLWtleS1mb3Itc3ByaW5nLWJvb3Qtc29hLW9yZGVyLW1hbmFnZW1lbnQtYXV0aC1zZXJ2aWNlLTIwMjY=
+  expiration-ms: 86400000 # 24 hours
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+

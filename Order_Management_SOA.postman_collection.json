@@ -1,0 +1,481 @@
+{
+  "info": {
+    "_postman_id": "9b12d590-449e-4b72-88ec-a34df4e09871",
+    "name": "Order Management System - SOA Architecture",
+    "description": "Postman Collection for Bài Thực Hành Số 4: Xây dựng dịch vụ quản lý đơn hàng (Order Management) with SOA integration (Auth Service 8081, Product Service 8082, Order Service 8083)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "AUTH_URL",
+      "value": "http://localhost:8081",
+      "type": "string"
+    },
+    {
+      "key": "PRODUCT_URL",
+      "value": "http://localhost:8082",
+      "type": "string"
+    },
+    {
+      "key": "ORDER_URL",
+      "value": "http://localhost:8083",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "item_id",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication Service (Port 8081)",
+      "item": [
+        {
+          "name": "1.1 Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{AUTH_URL}}/api/auth/health",
+              "host": ["{{AUTH_URL}}"],
+              "path": ["api", "auth", "health"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login (Get JWT Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('jwt_token', jsonData.data.token);",
+                  "    console.log('JWT Token stored:', jsonData.data.token);",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{AUTH_URL}}/api/auth/login",
+              "host": ["{{AUTH_URL}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Validate Token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{AUTH_URL}}/api/auth/validate",
+              "host": ["{{AUTH_URL}}"],
+              "path": ["api", "auth", "validate"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Product Service (Port 8082)",
+      "item": [
+        {
+          "name": "2.1 Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{PRODUCT_URL}}/products/health",
+              "host": ["{{PRODUCT_URL}}"],
+              "path": ["products", "health"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{PRODUCT_URL}}/products",
+              "host": ["{{PRODUCT_URL}}"],
+              "path": ["products"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Get Product by ID (ID: 1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{PRODUCT_URL}}/products/1",
+              "host": ["{{PRODUCT_URL}}"],
+              "path": ["products", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Order Service - Orders (Port 8083)",
+      "item": [
+        {
+          "name": "3.1 Health Check (Public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ORDER_URL}}/orders/health",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders", "health"]
+            }
+          }
+        },
+        {
+          "name": "3.2 Test 401 Unauthorized (No Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Expect 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{ORDER_URL}}/orders",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Create Order (Success)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set('order_id', jsonData.data.id);",
+                  "}",
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Order total amount is 3000.00', function () {",
+                  "    pm.expect(jsonData.data.totalAmount).to.eql(3000.00);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Nguyen Van An\",\n  \"customerEmail\": \"an.nguyen@example.com\",\n  \"items\": [\n    {\n      \"productId\": 1,\n      \"quantity\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{ORDER_URL}}/orders",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Create Order - Insufficient Stock (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Expect 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Tran Thi Binh\",\n  \"customerEmail\": \"binh.tran@example.com\",\n  \"items\": [\n    {\n      \"productId\": 5,\n      \"quantity\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{ORDER_URL}}/orders",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "3.5 Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ORDER_URL}}/orders",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "3.6 Get Order By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ORDER_URL}}/orders/{{order_id}}",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders", "{{order_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3.7 Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "{{ORDER_URL}}/orders/{{order_id}}",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders", "{{order_id}}"]
+            }
+          }
+        },
+        {
+          "name": "3.8 Delete Order",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ORDER_URL}}/orders/{{order_id}}",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["orders", "{{order_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Order Service - Order Items (Port 8083)",
+      "item": [
+        {
+          "name": "4.1 Get All Order Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ORDER_URL}}/order_items",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["order_items"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Add Item to Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set('item_id', jsonData.data.id);",
+                  "}",
+                  "pm.test('Item added successfully', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{order_id}},\n  \"productId\": 3,\n  \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "{{ORDER_URL}}/order_items",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["order_items"]
+            }
+          }
+        },
+        {
+          "name": "4.3 Get Order Item By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ORDER_URL}}/order_items/{{item_id}}",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["order_items", "{{item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "4.4 Update Order Item Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{ORDER_URL}}/order_items/{{item_id}}",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["order_items", "{{item_id}}"]
+            }
+          }
+        },
+        {
+          "name": "4.5 Delete Order Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{ORDER_URL}}/order_items/{{item_id}}",
+              "host": ["{{ORDER_URL}}"],
+              "path": ["order_items", "{{item_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
+
